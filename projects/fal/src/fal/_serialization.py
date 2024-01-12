@@ -12,11 +12,12 @@ _MODULES: set[str] = set()
 _PACKAGES: set[str] = set()
 
 
-@mainify
-def _pydantic_make_field(kwargs):
-    from pydantic.fields import ModelField
+# TODO: no loger used
+# @mainify
+# def _pydantic_make_field(kwargs):
+#     from pydantic.fields import ModelField
 
-    return ModelField(**kwargs)
+#     return ModelField(**kwargs)
 
 
 @mainify
@@ -73,26 +74,27 @@ def patch_pydantic_field_serialization():
     except ImportError:
         return
 
-    @dill.register(pydantic.fields.ModelField)
-    def _pickle_model_field(
-        pickler: dill.Pickler,
-        field: pydantic.fields.ModelField,
-    ) -> None:
-        args = {
-            "name": field.name,
-            # outer_type_ is the original type for ModelFields,
-            # while type_ can be updated later with the nested type
-            # like int for List[int].
-            "type_": field.outer_type_,
-            "class_validators": field.class_validators,
-            "model_config": field.model_config,
-            "default": field.default,
-            "default_factory": field.default_factory,
-            "required": field.required,
-            "alias": field.alias,
-            "field_info": field.field_info,
-        }
-        pickler.save_reduce(_pydantic_make_field, (args,), obj=field)
+    # Removed in V2
+    # @dill.register(pydantic.fields.ModelField)
+    # def _pickle_model_field(
+    #     pickler: dill.Pickler,
+    #     field: pydantic.fields.ModelField,
+    # ) -> None:
+    #     args = {
+    #         "name": field.name,
+    #         # outer_type_ is the original type for ModelFields,
+    #         # while type_ can be updated later with the nested type
+    #         # like int for List[int].
+    #         "type_": field.outer_type_,
+    #         "class_validators": field.class_validators,
+    #         "model_config": field.model_config,
+    #         "default": field.default,
+    #         "default_factory": field.default_factory,
+    #         "required": field.required,
+    #         "alias": field.alias,
+    #         "field_info": field.field_info,
+    #     }
+    #     pickler.save_reduce(_pydantic_make_field, (args,), obj=field)
 
     @dill.register(pydantic.fields.ModelPrivateAttr)
     def _pickle_model_private_attr(
@@ -106,17 +108,18 @@ def patch_pydantic_field_serialization():
         pickler.save_reduce(_pydantic_make_private_field, (args,), obj=field)
 
 
-@mainify
-def patch_pydantic_class_attributes():
-    # Dill attempts to modify the __class__ of deserialized pydantic objects
-    # on this side but it meets with a rejection from pydantic's semantics since
-    # __class__ is not recognized as a proper dunder attribute.
-    try:
-        import pydantic.utils
-    except ImportError:
-        return
+# Removed in V2
+# @mainify
+# def patch_pydantic_class_attributes():
+#     # Dill attempts to modify the __class__ of deserialized pydantic objects
+#     # on this side but it meets with a rejection from pydantic's semantics since
+#     # __class__ is not recognized as a proper dunder attribute.
+#     try:
+#         import pydantic.utils
+#     except ImportError:
+#         return
 
-    pydantic.utils.DUNDER_ATTRIBUTES.add("__class__")
+#     pydantic.utils.DUNDER_ATTRIBUTES.add("__class__")
 
 
 @mainify
@@ -124,5 +127,5 @@ def patch_dill():
     import dill
 
     dill.settings["recurse"] = True
-    patch_pydantic_class_attributes()
+    # patch_pydantic_class_attributes()
     patch_pydantic_field_serialization()
